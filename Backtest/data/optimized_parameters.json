@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-10-05T21:59:29.073905",
+  "bull_symbol": "TQQQ",
+  "bear_symbol": "SQQQ",
+  "train_years": 3,
+  "best_params": {
+    "spy_sma_window": 34,
+    "etf_sma_window": 3,
+    "etf_rsi_window": 2,
+    "etf_rsi_threshold": 70.0
+  },
+  "best_sharpe": 3.1265421034397742,
+  "default_comparison": {
+    "params": {
+      "spy_sma_window": 200,
+      "etf_sma_window": 20,
+      "etf_rsi_window": 10,
+      "etf_rsi_threshold": 31.0
+    },
+    "train_sharpe": 0.719916096442838,
+    "val_sharpe": -999.0,
+    "avg_sharpe": -499.1400419517786
+  },
+  "optimization_summary": {
+    "total_iterations": 50,
+    "best_avg_sharpe": 3.1265421034397742,
+    "improvement_vs_default": 502.26658405521835
+  }
+}

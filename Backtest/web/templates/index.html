@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Strategy Backtest</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+        }
+        .card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+        }
+        .form-control, .form-select {
+            background-color: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #21262d;
+            border-color: #58a6ff;
+            color: #c9d1d9;
+            box-shadow: 0 0 0 0.2rem rgba(88, 166, 255, 0.25);
+        }
+        .btn-primary {
+            background-color: #238636;
+            border-color: #238636;
+        }
+        .btn-primary:hover {
+            background-color: #2ea043;
+            border-color: #2ea043;
+        }
+        .table-dark {
+            background-color: #161b22;
+        }
+        .table-dark td, .table-dark th {
+            border-color: #30363d;
+            font-size: 0.85rem;
+        }
+        .text-success { color: #3fb950 !important; }
+        .text-danger { color: #f85149 !important; }
+        .text-warning { color: #d29922 !important; }
+        .summary-card {
+            background: linear-gradient(135deg, #238636, #2ea043);
+        }
+        #chart-container {
+            background-color: #0d1117;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .spinner-border {
+            color: #238636;
+        }
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(88, 166, 255, 0.1);
+        }
+        /* Fix pandas table styling */
+        #tableContainer table {
+            color: #c9d1d9 !important;
+            background-color: #161b22 !important;
+        }
+        #tableContainer table th {
+            color: #f0f6fc !important;
+            background-color: #21262d !important;
+            border-color: #30363d !important;
+            font-weight: 600;
+        }
+        #tableContainer table td {
+            color: #c9d1d9 !important;
+            border-color: #30363d !important;
+            background-color: #0d1117 !important;
+        }
+        #tableContainer table tbody tr:nth-of-type(odd) td {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+        }
+        #tableContainer table tbody tr:hover td {
+            background-color: rgba(88, 166, 255, 0.1) !important;
+        }
+        /* Make sure all text in table is visible */
+        #tableContainer * {
+            color: #c9d1d9 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="text-center mb-4">Rotational Leveraged ETF Strategy</h1>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Input Form -->
+            <div class="col-lg-3 col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>📊 Backtest Parameters</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="backtestForm">
+                            <div class="mb-3">
+                                <label for="bull" class="form-label">📈 Bull ETF</label>
+                                <input type="text" class="form-control" id="bull" value="QLD" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="bear" class="form-label">📉 Bear ETF</label>
+                                <input type="text" class="form-control" id="bear" value="QID" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="start" class="form-label">📅 Start Date</label>
+                                <input type="date" class="form-control" id="start" value="2020-01-10" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="end" class="form-label">📅 End Date</label>
+                                <input type="date" class="form-control" id="end" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="cash" class="form-label">💰 Initial Cash</label>
+                                <input type="number" class="form-control" id="cash" value="50000" min="1000" step="1000" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="monthly" class="form-label">💵 Monthly Investment</label>
+                                <input type="number" class="form-control" id="monthly" value="0" min="0" step="100">
+                                <div class="form-text">Added on 1st trading day of month</div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="show_spy">
+                                    <label class="form-check-label" for="show_spy">
+                                        Show SPY Buy & Hold
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="show_buy_hold">
+                                    <label class="form-check-label" for="show_buy_hold">
+                                        Show Bull ETF Buy & Hold
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="use_ai_optimization">
+                                    <label class="form-check-label" for="use_ai_optimization">
+                                        🤖 Use AI-Optimized Parameters
+                                    </label>
+                                    <div class="form-text">Use Bayesian-optimized SMA/RSI thresholds</div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <span class="spinner-border spinner-border-sm me-2 d-none" id="loadingSpinner"></span>
+                                Run Backtest
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Summary Card -->
+                <div class="card mt-3 d-none" id="summaryCard">
+                    <div class="card-header summary-card text-white">
+                        <h5>📊 Final Results</h5>
+                    </div>
+                    <div class="card-body" id="summaryContent">
+                        <!-- Summary content will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Area -->
+            <div class="col-lg-9 col-md-8">
+                <!-- Chart -->
+                <div class="card mb-3 d-none" id="chartCard">
+                    <div class="card-header">
+                        <h5>📈 Portfolio Performance</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="chart-container">
+                            <canvas id="performanceChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Table -->
+                <div class="card d-none" id="tableCard">
+                    <div class="card-header">
+                        <h5>📋 Daily Backtest Data</h5>
+                        <small class="text-muted">Scroll to view all data</small>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" id="tableContainer">
+                            <!-- Table will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div class="card d-none" id="loadingCard">
+                    <div class="card-body text-center">
+                        <div class="spinner-border" style="width: 3rem; height: 3rem;"></div>
+                        <p class="mt-3">Running backtest... This may take a few moments to download and process data.</p>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div class="alert alert-danger d-none" id="errorAlert">
+                    <h5>❌ Error</h5>
+                    <p id="errorMessage"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Set today's date as default end date
+        document.getElementById('end').value = new Date().toISOString().split('T')[0];
+        
+        let performanceChart = null;
+
+        document.getElementById('backtestForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            showLoading();
+            
+            // Collect form data
+            const formData = {
+                bull: document.getElementById('bull').value,
+                bear: document.getElementById('bear').value,
+                start: document.getElementById('start').value,
+                end: document.getElementById('end').value,
+                cash: parseFloat(document.getElementById('cash').value),
+                monthly: parseFloat(document.getElementById('monthly').value),
+                show_spy: document.getElementById('show_spy').checked,
+                show_buy_hold: document.getElementById('show_buy_hold').checked,
+                use_ai_optimization: document.getElementById('use_ai_optimization').checked
+            };
+
+            try {
+                const response = await fetch('/run_backtest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayResults(result);
+                } else {
+                    showError(result.error);
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        });
+
+        function showLoading() {
+            document.getElementById('loadingSpinner').classList.remove('d-none');
+            document.getElementById('loadingCard').classList.remove('d-none');
+            document.getElementById('chartCard').classList.add('d-none');
+            document.getElementById('tableCard').classList.add('d-none');
+            document.getElementById('summaryCard').classList.add('d-none');
+            document.getElementById('errorAlert').classList.add('d-none');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').classList.add('d-none');
+            document.getElementById('loadingCard').classList.add('d-none');
+        }
+
+        function showError(message) {
+            hideLoading();
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorAlert').classList.remove('d-none');
+        }
+
+        function displayResults(result) {
+            hideLoading();
+            
+            // Display chart
+            displayChart(result.chart_data);
+            document.getElementById('chartCard').classList.remove('d-none');
+            
+            // Display table
+            document.getElementById('tableContainer').innerHTML = result.table_html;
+            document.getElementById('tableCard').classList.remove('d-none');
+            
+            // Display summary
+            displaySummary(result.summary, result.bull_symbol, result.bear_symbol, result.use_ai_optimization, result.parameter_summary);
+            document.getElementById('summaryCard').classList.remove('d-none');
+        }
+
+        function displayChart(chartData) {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#c9d1d9',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#c9d1d9',
+                                maxTicksLimit: 10
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#c9d1d9',
+                                callback: function(value, index, values) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        function displaySummary(summary, bullSymbol, bearSymbol, useAiOptimization = false, parameterSummary = '') {
+            let html = `
+                <div class="row">
+                    <div class="col-12">
+                        <h6>${bullSymbol}/${bearSymbol} Strategy ${useAiOptimization ? '🤖' : ''}</h6>
+                        ${useAiOptimization ? `<small class="text-info mb-2 d-block">Using AI-Optimized Parameters</small>` : ''}
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <small class="text-muted">Initial Investment:</small><br>
+                                <strong>$${summary.initial_investment.toLocaleString()}</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Total Invested:</small><br>
+                                <strong>$${summary.total_invested.toLocaleString()}</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Final Value:</small><br>
+                                <strong class="text-success">$${summary.final_portfolio_value.toLocaleString()}</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Net Profit:</small><br>
+                                <strong class="${summary.net_profit >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${summary.net_profit >= 0 ? '+' : ''}$${summary.net_profit.toLocaleString()}
+                                </strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">ROI on Invested:</small><br>
+                                <strong class="${summary.roi_on_invested >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${summary.roi_on_invested >= 0 ? '+' : ''}${summary.roi_on_invested.toFixed(2)}%
+                                </strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Total Return:</small><br>
+                                <strong class="${summary.total_return >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${summary.total_return >= 0 ? '+' : ''}${summary.total_return.toFixed(2)}%
+                                </strong>
+                            </div>
+            `;
+            
+            if (summary.monthly_investment > 0) {
+                html += `
+                            <div class="col-12 mt-2">
+                                <small class="text-muted">Monthly Investment: $${summary.monthly_investment.toLocaleString()}/month</small>
+                            </div>
+                `;
+            }
+            
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add comparisons if available
+            if (summary.comparisons) {
+                html += `<hr class="my-3"><h6>📊 Buy & Hold Comparisons</h6>`;
+                
+                if (summary.comparisons.spy) {
+                    const spy = summary.comparisons.spy;
+                    html += `
+                        <div class="row g-2 mb-2">
+                            <div class="col-8">
+                                <small class="text-muted">SPY Buy & Hold:</small><br>
+                                <strong>$${spy.final_value.toLocaleString()} (${spy.return >= 0 ? '+' : ''}${spy.return.toFixed(2)}%)</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">vs SPY:</small><br>
+                                <strong class="${spy.vs_strategy >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${spy.vs_strategy >= 0 ? '+' : ''}${spy.vs_strategy.toFixed(2)}%
+                                </strong>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                if (summary.comparisons[bullSymbol]) {
+                    const bull = summary.comparisons[bullSymbol];
+                    html += `
+                        <div class="row g-2">
+                            <div class="col-8">
+                                <small class="text-muted">${bullSymbol} Buy & Hold:</small><br>
+                                <strong>$${bull.final_value.toLocaleString()} (${bull.return >= 0 ? '+' : ''}${bull.return.toFixed(2)}%)</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted">vs ${bullSymbol}:</small><br>
+                                <strong class="${bull.vs_strategy >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${bull.vs_strategy >= 0 ? '+' : ''}${bull.vs_strategy.toFixed(2)}%
+                                </strong>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Add parameter information
+            if (parameterSummary) {
+                html += `
+                    <hr class="my-3">
+                    <h6>⚙️ Algorithm Parameters</h6>
+                    <small class="text-muted">${parameterSummary.replace(/\n/g, '<br>')}</small>
+                `;
+            }
+            
+            document.getElementById('summaryContent').innerHTML = html;
+        }
+    </script>
+</body>
+</html>

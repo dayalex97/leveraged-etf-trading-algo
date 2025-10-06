@@ -39,4 +39,15 @@ cd Reporting/
 ### Daily Email Reports
 ![Email Report](images/report%20screenshot.png)
 
+## Disclaimer
+
+**This project is for educational and entertainment purposes only.** Past performance does not guarantee future results. Real-world trading involves significant risks not captured in backtests:
+
+- **Slippage**: Actual execution prices may differ from backtested prices due to market volatility and liquidity
+- **Timing**: The algorithm uses end-of-day closing prices, implying trades would be executed near market close in real scenarios
+- **Market conditions**: Historical patterns may not repeat, and leveraged ETFs carry amplified risk during volatile periods
+- **Transaction costs**: Backtests may not fully account for fees, taxes, and bid-ask spreads
+
+**Never risk more than you can afford to lose. Consult a financial advisor before making investment decisions.**
+
 See the README files in each folder for detailed setup instructions. The backtest module is probably more interesting to start with.

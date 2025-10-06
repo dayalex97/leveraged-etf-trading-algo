@@ -28,4 +28,15 @@ cd Reporting/
 ./run_algo.sh --fetch-current
 ```
 
+## Screenshots
+
+### Backtest Web Interface
+![Backtest Interface](images/Backtest%20Photo.png)
+
+### Performance Charts
+![Backtest Results](images/Backtest%20Graph.png)
+
+### Daily Email Reports
+![Email Report](images/report%20screenshot.png)
+
 See the README files in each folder for detailed setup instructions. The backtest module is probably more interesting to start with.

@@ -24,7 +24,7 @@ def get_cached_data(symbol):
 def download_data(symbol):
     """Improved data download with proper datetime handling"""
     stock = yf.Ticker(symbol)
-    df = stock.history(start="2012-01-20", auto_adjust=False)
+    df = stock.history(start="2000-01-01", auto_adjust=False)
     
     # Keep dates as datetime64 type
     df = df.reset_index()

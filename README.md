@@ -32,7 +32,6 @@ cd Reporting/
 
 ### Backtest Web Interface
 ![Backtest Interface](images/Backtest%20Photo.png)
-![Backtest Interface](images/2008-reaction.png)
 
 ### Performance Charts
 ![Backtest Results](images/Backtest%20Graph.png)
